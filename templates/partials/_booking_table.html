@@ -1,0 +1,25 @@
+{% with show_member=show_member|default:True %}
+<table class="min-w-full divide-y divide-slate-200">
+  <thead class="bg-slate-100">
+    <tr>
+      <th class="px-3 py-2 text-left text-sm font-medium text-slate-700">시작</th>
+      <th class="px-3 py-2 text-left text-sm font-medium text-slate-700">종료</th>
+      {% if show_member %}
+      <th class="px-3 py-2 text-left text-sm font-medium text-slate-700">회원</th>
+      {% endif %}
+      <th class="px-3 py-2 text-left text-sm font-medium text-slate-700">상품</th>
+      <th class="px-3 py-2 text-left text-sm font-medium text-slate-700">차감</th>
+      <th class="px-3 py-2 text-right text-sm font-medium text-slate-700">액션</th>
+    </tr>
+  </thead>
+  <tbody class="divide-y divide-slate-200">
+    {% for booking in bookings %}
+      {% include 'partials/_booking_row.html' with show_member=show_member %}
+    {% empty %}
+    <tr>
+      <td colspan="6" class="px-3 py-4 text-center text-sm text-slate-500">예약이 없습니다.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endwith %}

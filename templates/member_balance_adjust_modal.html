@@ -1,0 +1,84 @@
+<div id="{{ modal_id|default:'balanceModal' }}" tabindex="-1" aria-hidden="true"
+     class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto h-[100dvh] bg-black/30">
+  <div class="relative w-full max-w-lg mx-auto">
+    <div class="relative bg-white rounded-lg shadow dark:bg-slate-800">
+      <div class="flex items-center justify-between px-5 py-3 border-b dark:border-slate-700">
+        <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">회원 잔여시간 조정</h3>
+        <button type="button" data-modal-hide="{{ modal_id|default:'balanceModal' }}"
+                class="text-slate-500 hover:text-slate-700 rounded-lg text-sm p-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="{{ modal_id|default:'balanceModal' }}-form"
+            hx-post="{% url 'member_ledger_adjust' member.id %}"
+            hx-target="#{{ modal_id|default:'balanceModal' }}-errors"
+            hx-swap="innerHTML"
+            x-data="balanceForm({{ member.balance_minutes }})" x-init="calc()">
+        {% csrf_token %}
+
+        <div class="px-5 py-4 space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50">
+              <div class="text-xs text-slate-500">현재 잔여시간</div>
+              <div class="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100"><span x-text="current"></span>분</div>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50">
+              <div class="text-xs text-slate-500">미리보기 잔액</div>
+              <div class="mt-1 text-lg font-semibold text-indigo-600 dark:text-indigo-400"><span x-text="preview"></span>분</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label class="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-200">증감 분 (+/-)</label>
+              <input type="number" name="delta_minutes" x-model.number="delta" @input="calc()" step="1"
+                     class="block w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" placeholder="예: +60 또는 -30" required>
+            </div>
+            <div>
+              <label class="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-200">사유</label>
+              <select name="reason" x-model="reason"
+                      class="block w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+                <option value="adjust">조정(adjust)</option>
+                <option value="package">패키지 충전(package)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-200">메모</label>
+            <textarea name="memo" rows="2" class="block w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" placeholder="선택 사항"></textarea>
+          </div>
+
+          <p class="text-xs text-slate-500">※ 미리보기 결과가 음수인 경우 서버 검증에서 거부됩니다.</p>
+          <div id="{{ modal_id|default:'balanceModal' }}-errors"></div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 px-5 py-3 border-t dark:border-slate-700">
+          <button type="button" data-modal-hide="{{ modal_id|default:'balanceModal' }}"
+                  class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border rounded-lg hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600">취소</button>
+          <button type="submit"
+                  class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300">확정</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function balanceForm(current){
+  return {
+    current: current,
+    delta: 0,
+    reason: 'adjust',
+    preview: current,
+    calc(){ this.preview = (this.current || 0) + (this.delta || 0); }
+  }
+}
+window.addEventListener('htmx:afterRequest', (ev)=>{
+  if(ev.detail.requestConfig?.elt?.id === '{{ modal_id|default:'balanceModal' }}-form' && ev.detail.xhr?.status === 201){
+    document.querySelector('[data-modal-hide="{{ modal_id|default:'balanceModal' }}"]')?.click();
+    document.dispatchEvent(new CustomEvent('member:balance-updated', { detail: ev.detail.xhr.response }));
+  }
+});
+</script>

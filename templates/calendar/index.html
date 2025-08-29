@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}캘린더 - Gosu Drive{% endblock %}
+{% block content %}
+<div id="calendar" class="bg-white rounded-lg p-3 shadow"></div>
+
+{% include 'booking_create_modal.html' %}
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const el = document.getElementById('calendar');
+    const calendar = new FullCalendar.Calendar(el, {
+      initialView: 'timeGridWeek',
+      locale: 'ko', timeZone: 'Asia/Seoul',
+      selectable: true, selectMirror: true,
+      headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
+      events: {
+        url: '{% url "calendar_feed" %}',
+        failure: () => alert('달력을 불러오는 중 오류가 발생했습니다.')
+      },
+      select: function(info){
+        const input = document.querySelector('#bookingModal input[name="start"]');
+        if(input){ input.value = info.startStr.substring(0,16); }
+        if(window.Modal){ new Modal(document.getElementById('bookingModal')).show(); }
+        else { document.querySelector('[data-modal-toggle="bookingModal"]').click(); }
+      }
+    });
+    calendar.render();
+    document.addEventListener('booking:created', ()=> calendar.refetchEvents());
+    document.addEventListener('booking:canceled', ()=> calendar.refetchEvents());
+  });
+</script>
+{% endblock %}
+

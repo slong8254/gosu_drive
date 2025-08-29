@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}예약 목록 - Gosu Drive{% endblock %}
+{% block content %}
+<div class="max-w-screen-2xl mx-auto">
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-xl font-semibold">예약 목록</h1>
+    <button data-modal-target="bookingModal" data-modal-toggle="bookingModal"
+            class="text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 font-medium rounded-lg text-sm px-4 py-2">예약 생성</button>
+  </div>
+  <div id="booking-table" hx-get="{% url 'booking_table' %}"
+       hx-trigger="booking:created from:body, booking:canceled from:body">
+    {% include 'partials/_booking_table.html' with bookings=bookings show_member=True %}
+  </div>
+</div>
+{% include 'booking_create_modal.html' with members=members products=products %}
+{% endblock %}

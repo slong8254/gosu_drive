@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}회원 목록 - Gosu Drive{% endblock %}
+{% block content %}
+<div class="max-w-screen-2xl mx-auto">
+  <h1 class="text-xl font-semibold mb-4">회원 목록</h1>
+  <table class="min-w-full divide-y divide-slate-200" id="member-table">
+    <thead class="bg-slate-100">
+      <tr>
+        <th class="px-3 py-2 text-left text-sm font-medium text-slate-700">이름</th>
+        <th class="px-3 py-2 text-left text-sm font-medium text-slate-700">전화번호</th>
+        <th class="px-3 py-2 text-left text-sm font-medium text-slate-700">잔여시간</th>
+        <th class="px-3 py-2 text-right text-sm font-medium text-slate-700">액션</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-200">
+      {% for member in members %}
+      <tr>
+        <td class="px-3 py-2"><a href="{% url 'member_detail' member.id %}" class="text-indigo-600 hover:underline">{{ member.name }}</a></td>
+        <td class="px-3 py-2">{{ member.phone }}</td>
+        <td class="px-3 py-2">
+          <span id="member-balance-{{ member.id }}" hx-get="{% url 'member_balance_badge' member.id %}"
+                hx-trigger="member:balance-updated from:body, booking:created from:body, booking:canceled from:body">
+            {% include 'partials/_member_balance_badge.html' %}
+          </span>
+        </td>
+        <td class="px-3 py-2 text-right">
+          <button data-modal-target="balanceModal{{ member.id }}" data-modal-toggle="balanceModal{{ member.id }}"
+                  class="text-sm text-indigo-600 hover:underline">잔여시간 조정</button>
+          {% include 'member_balance_adjust_modal.html' with member=member modal_id='balanceModal'|add:member.id %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="px-3 py-4 text-center text-sm text-slate-500">회원이 없습니다.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

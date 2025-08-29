@@ -1,0 +1,124 @@
+<!-- 예약 생성 모달 -->
+<button data-modal-target="bookingModal" data-modal-toggle="bookingModal"
+        class="text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 font-medium rounded-lg text-sm px-4 py-2">예약 생성</button>
+
+<div id="bookingModal" tabindex="-1" aria-hidden="true"
+     class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto h-[100dvh] bg-black/30">
+  <div class="relative w-full max-w-2xl mx-auto">
+    <div class="relative bg-white rounded-lg shadow dark:bg-slate-800">
+      <div class="flex items-center justify-between px-5 py-3 border-b dark:border-slate-700">
+        <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">예약 생성</h3>
+        <button type="button" data-modal-hide="bookingModal"
+                class="text-slate-500 hover:text-slate-700 rounded-lg text-sm p-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="booking-form"
+            hx-post="{% url 'booking_create' %}"
+            hx-target="#booking-form-errors"
+            hx-swap="innerHTML"
+            x-data="bookingForm()" x-init="init()">
+        {% csrf_token %}
+
+        <div class="px-5 py-4 space-y-4">
+          <div>
+            <label class="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-200">회원</label>
+            <select name="member_id" x-model="memberId"
+                    class="block w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+              {% for m in members %}
+                <option value="{{ m.id }}">{{ m.name }} ({{ m.phone }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label class="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-200">수업 상품</label>
+            <select name="product_id" x-model="productId" @change="onProductChange($event)"
+                    class="block w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+              {% for p in products %}
+                <option value="{{ p.id }}" data-min="{{ p.default_deduct_minutes|default:'' }}">
+                  {{ p.title }}{% if p.default_deduct_minutes %} — 기본 {{ p.default_deduct_minutes }}분{% endif %}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label class="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-200">시작</label>
+              <input type="datetime-local" name="start" x-model="startLocal" @change="recalcEnd()"
+                     class="block w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" required>
+            </div>
+            <div>
+              <label class="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-200">차감 분</label>
+              <input type="number" min="1" step="1" name="deducted_minutes" x-model.number="minutes" @input="recalcEnd()" id="deducted_minutes"
+                     placeholder="미입력 시 상품 기본 사용"
+                     class="block w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+            </div>
+          </div>
+
+          <div>
+            <label class="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-200">종료 (자동)</label>
+            <input type="datetime-local" x-model="endLocal" readonly
+                   class="block w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+          </div>
+
+          <div>
+            <label class="block mb-1 text-sm font-medium text-slate-700 dark:text-slate-200">메모</label>
+            <textarea name="note" rows="2" class="block w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" placeholder="선택 사항"></textarea>
+          </div>
+
+          <div id="booking-form-errors"></div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 px-5 py-3 border-t dark:border-slate-700">
+          <button type="button" data-modal-hide="bookingModal"
+                  class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border rounded-lg hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600">취소</button>
+          <button type="submit"
+                  class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300">예약 생성</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function bookingForm(){
+  return {
+    memberId: '{{ default_member.id|default:"" }}',
+    productId: '{{ default_product.id|default:"" }}',
+    minutes: null,
+    startLocal: '',
+    endLocal: '',
+    init(){
+      const sel = document.querySelector('#bookingModal select[name=product_id]');
+      if(sel && sel.selectedOptions.length){
+        const m = parseInt(sel.selectedOptions[0].dataset.min);
+        if(!isNaN(m)) this.minutes = m;
+      }
+    },
+    onProductChange(e){
+      const m = parseInt(e.target.selectedOptions[0].dataset.min);
+      if(!isNaN(m) && (!this.minutes || this.minutes === 0)) { this.minutes = m; this.recalcEnd(); }
+    },
+    recalcEnd(){
+      if(!this.startLocal || !this.minutes){ this.endLocal = ''; return; }
+      const start = new Date(this.startLocal);
+      if(isNaN(start)) { this.endLocal=''; return; }
+      const end = new Date(start.getTime() + (this.minutes*60000));
+      const pad = n => String(n).padStart(2,'0');
+      const y=end.getFullYear(), mo=pad(end.getMonth()+1), d=pad(end.getDate());
+      const h=pad(end.getHours()), mi=pad(end.getMinutes());
+      this.endLocal = `${y}-${mo}-${d}T${h}:${mi}`;
+    }
+  }
+}
+window.addEventListener('htmx:afterRequest', (ev)=>{
+  if(ev.detail.requestConfig?.elt?.id === 'booking-form' && ev.detail.xhr?.status === 201){
+    document.querySelector('[data-modal-hide="bookingModal"]')?.click();
+    document.dispatchEvent(new CustomEvent('booking:created', { detail: ev.detail.xhr.response }));
+  }
+});
+</script>
+
