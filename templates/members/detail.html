@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}회원 상세 - Gosu Drive{% endblock %}
+{% block content %}
+<div class="max-w-screen-2xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-semibold">{{ member.name }}</h1>
+    <div class="flex gap-2">
+      <button data-modal-target="bookingModal" data-modal-toggle="bookingModal"
+              class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300">예약 생성</button>
+      <button data-modal-target="balanceModal" data-modal-toggle="balanceModal"
+              class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border rounded-lg hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600">잔여시간 조정</button>
+    </div>
+  </div>
+
+  <div id="member-balance" hx-get="{% url 'member_balance_badge' member.id %}"
+       hx-trigger="member:balance-updated from:body, booking:created from:body, booking:canceled from:body">
+    {% include 'partials/_member_balance_badge.html' %}
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div>
+      <h2 class="text-lg font-semibold mb-2">예약 내역</h2>
+      <div id="booking-table" hx-get="{% url 'member_booking_table' member.id %}"
+           hx-trigger="booking:created from:body, booking:canceled from:body">
+        {% include 'partials/_booking_table.html' with bookings=bookings show_member=False %}
+      </div>
+    </div>
+
+    <div>
+      <h2 class="text-lg font-semibold mb-2">시간 Ledger</h2>
+      <div id="ledger-table" hx-get="{% url 'member_ledger_table' member.id %}"
+           hx-trigger="member:balance-updated from:body, booking:created from:body, booking:canceled from:body">
+        {% include 'partials/_ledger_table.html' with ledgers=ledgers %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include 'booking_create_modal.html' with members=members products=products default_member=member %}
+{% include 'member_balance_adjust_modal.html' with member=member %}
+{% endblock %}
